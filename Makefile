@@ -37,6 +37,7 @@ install-docker-buildx: ## Install docker buildx for muti-platform build.
 	curl -o ~/.docker/cli-plugins/docker-buildx -L "https://github.com/docker/buildx/releases/download/v0.6.3/buildx-v0.6.3.linux-$(dpkg --print-architecture)"
 	chmod a+x ~/.docker/cli-plugins/docker-buildx
 	sudo mkdir -p /etc/docker/
+	sudo systemctl stop docker
 	sudo echo '{"registry-mirrors":["https://registry.cn-hangzhou.aliyuncs.com"]}' > /etc/docker/daemon.json
 	sudo systemctl daemon-reload
 	sudo systemctl restart docker
