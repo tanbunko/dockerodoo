@@ -33,6 +33,13 @@ install-docker: ## Install docker
 	@read -t 10 -p "Hit ENTER or wait ten seconds to reboot(CTL+C to cancle)"
 	sudo reboot
 
+install-docker-buildx:
+	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+	docker buildx create --name cibuilder --driver docker-container --use
+	docker buildx ls
+	docker buildx inspect --bootstrap
+
+
 ifndef ODOO_COMMIT_ID 
 ODOO_COMMIT_ID:=15.0
 endif
@@ -41,32 +48,34 @@ ifndef ${TAG}
 TAG:=odoo15
 endif
 
-# DOCKER_BUILD_PLATFORM:=linux/amd64,linux/arm64
 ifndef PLATFORM 
-PLATFORM:=linux/arm64
+PLATFORM:=linux/amd64,linux/arm64
 endif
 
-docker_build: ## These make targets currently only build LMS images.
-	@echo ${TAG} ${ODOO_COMMIT_ID} ${ODOO_SHA}
-	docker buildx build ./${TAG} -t telesoho/${TAG} --build-arg ODOO_COMMIT_ID=${ODOO_COMMIT_ID} --build-arg ODOO_SHA=${ODOO_SHA} --platform=${PLATFORM} --load --pull
-	# docker build . -f Dockerfile --target lms-newrelic -t openedx/edx-platform:latest-newrelic
+docker-build: ## These make targets currently only build LMS images.
+	@echo ${TAG} ${ODOO_COMMIT_ID} ${ODOO_SHA} ${PLATFORM}
+	docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg ODOO_COMMIT_ID=${ODOO_COMMIT_ID} --build-arg ODOO_SHA=${ODOO_SHA} --platform=${PLATFORM} --pull --push
+
+docker-load:
+	# docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg ODOO_COMMIT_ID=${ODOO_COMMIT_ID} --build-arg ODOO_SHA=${ODOO_SHA} --platform=${PLATFORM} --pull --load
+
 
 pull: ## update the Docker image used by "make shell"
 	docker pull telesoho/${TAG}:latest
 
-docker_auth: ## login docker
+docker-auth: ## login docker
 	echo "$$DOCKERHUB_PASSWORD" | docker login -u "$$DOCKERHUB_USERNAME" --password-stdin
 
-docker_tag: docker_build
-	docker tag openedx/edx-platform openedx/edx-platform:${GITHUB_SHA}
-	docker tag openedx/edx-platform:latest-newrelic openedx/edx-platform:${GITHUB_SHA}-newrelic
+docker-tag: docker_build
+	docker tag telesoho/odoo telesoho/edx-platform:${GITHUB_SHA}
+	docker tag telesoho/odoo:latest-newrelic openedx/edx-platform:${GITHUB_SHA}-newrelic
 
 
-docker_push: docker_tag docker_auth ## push to docker hub
-	docker push 'openedx/edx-platform:latest'
-	docker push "openedx/edx-platform:${GITHUB_SHA}"
-	docker push 'openedx/edx-platform:latest-newrelic'
-	docker push "openedx/edx-platform:${GITHUB_SHA}-newrelic"
+docker-push: docker-tag docker-auth ## push to docker hub
+	docker push 'telesoho/odoo:latest'
+	docker push "openedx/odoo:${GITHUB_SHA}"
+	docker push 'openedx/odoo:latest-newrelic'
+	docker push "openedx/odoo:${GITHUB_SHA}-newrelic"
 
 
 SWAGGER = docs/swagger.yaml
