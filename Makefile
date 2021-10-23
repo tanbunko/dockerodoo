@@ -32,10 +32,13 @@ install-docker: ## Install docker
 	@read -t 10 -p "Hit ENTER or wait ten seconds to reboot(CTL+C to cancle)"
 	sudo reboot
 
-install-docker-buildx:
+install-docker-buildx: ## Install docker buildx for muti-platform build.
 	mkdir -p ~/.docker/cli-plugins
 	curl -o ~/.docker/cli-plugins/docker-buildx -L "https://github.com/docker/buildx/releases/download/v0.6.3/buildx-v0.6.3.linux-$(dpkg --print-architecture)"
 	chmod a+x ~/.docker/cli-plugins/docker-buildx
+	sudo mkdir -p /etc/docker/
+	sudo echo '{"registry-mirrors":["https://registry.cn-hangzhou.aliyuncs.com"]}' > /etc/docker/daemon.json
+	sudo systemctl daemon-reload
 	sudo systemctl restart docker
 	docker run --privileged --rm tonistiigi/binfmt --install all
 	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
@@ -61,7 +64,7 @@ docker-build: ## These make targets currently only build LMS images.
 	docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg ODOO_COMMIT_ID=${ODOO_COMMIT_ID} --build-arg ODOO_SHA=${ODOO_SHA} --platform=${PLATFORM} --pull --push
 
 docker-load:
-	# docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg ODOO_COMMIT_ID=${ODOO_COMMIT_ID} --build-arg ODOO_SHA=${ODOO_SHA} --platform=${PLATFORM} --pull --load
+	docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg ODOO_COMMIT_ID=${ODOO_COMMIT_ID} --build-arg ODOO_SHA=${ODOO_SHA} --platform=${PLATFORM} --pull --load
 
 
 docker-pull: ## update the Docker image used by "make shell"
