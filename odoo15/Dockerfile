@@ -78,10 +78,11 @@ ARG ODOO_SHA=12631633fbebdceb06899f4e2d1e035917310376
 
 
 WORKDIR /opt/odoo/src
-RUN curl -o odoo.tgz -L https://github.com/odoo/odoo/tarball/${ODOO_COMMIT_ID}
-RUN if [[ "$ODOO_SHA" != "" ]] ; then  echo "${ODOO_SHA} odoo.tgz" | sha1sum -c -; else echo "Warnning: No SHA sum check!"  ; fi \
-    && tar --transform='s|^odoo-odoo-[^\/]*|odoo|' -xzf odoo.tgz \
-    && rm odoo.tgz
+
+COPY build/odoo.tgz odoo.tgz
+
+RUN tar --transform='s|^odoo-odoo-[^\/]*|odoo|' -xzf odoo.tgz 
+RUN rm -rf odoo.tgz
 
 USER 0
 

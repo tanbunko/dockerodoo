@@ -1,8 +1,10 @@
 SHELL := /bin/bash
 
 # Do things in edx-platform
-.PHONY: clean extract_translations help pull pull_translations push_translations requirements shell upgrade
-.PHONY: api-docs docs guides swagger install-requirements
+.PHONY: clean help pull pull-odoo install-docker install-docker-buildx 
+
+log_success = (echo -e "\x1B[32m>> $1\x1B[39m")
+log_error = (>&2 echo -e "\x1B[31m>> $1\x1B[39m" && exit 1)
 
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIR := $(notdir $(patsubst %/,%,$(dir $(MKFILE_PATH))))
@@ -53,7 +55,7 @@ ifndef ODOO_COMMIT_ID
 ODOO_COMMIT_ID:=15.0
 endif
 
-ifndef ${TAG}
+ifndef TAG
 TAG:=odoo15
 endif
 
@@ -61,9 +63,25 @@ ifndef PLATFORM
 PLATFORM:=linux/amd64,linux/arm64
 endif
 
+
+BUILD_DIR:=./${TAG}/build
+ODOO_TGZ:=${BUILD_DIR}/odoo.tgz
+SHA1SUM_FILE:=${ODOO_TGZ}.sha1sum
+
+ifndef ODOO_SHA
+OLD_ODOO_SHA:=$(firstword $(shell sha1sum "${ODOO_TGZ}"))
+endif
+
+pull-odoo:
+	mkdir -p ${BUILD_DIR}
+	curl -o "${ODOO_TGZ}" -L https://github.com/odoo/odoo/tarball/${ODOO_COMMIT_ID}
+	sha1sum "${ODOO_TGZ}" > ${SHA1SUM_FILE}
+	if [[ z"${ODOO_SHA}" != z"" ]] ; then  echo "${ODOO_SHA} ${ODOO_TGZ}" | sha1sum -c --quiet - || $(call log_error, "odoo source sha1sum check failed"); fi
+
 docker-build: ## These make targets currently only build LMS images.
-	@echo ${TAG} ${ODOO_COMMIT_ID} ${ODOO_SHA} ${PLATFORM}
-	docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg ODOO_COMMIT_ID=${ODOO_COMMIT_ID} --build-arg ODOO_SHA=${ODOO_SHA} --platform=${PLATFORM} --pull --push > job1 2>&1 &
+	if [ z"${ODOO_SHA}" != z"" ] && [ "${OLD_ODOO_SHA}" != "${ODOO_SHA}" ] ; then make pull-odoo; else if ! cat "${SHA1SUM_FILE}" | sha1sum -c --quiet -; then make pull-odoo ;fi ; fi
+	echo "TAG:${TAG} ODOO_COMMIT_ID=${ODOO_COMMIT_ID} ODOO_SHA=$(firstword ${ODOO_SHA} $(shell cat "${SHA1SUM_FILE}")) PLATFORM:${PLATFORM}"
+	docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg TAG=${TAG} --platform=${PLATFORM} --pull --push --force-rm # > ./build/job.log 2>&1 &
 
 docker-load:
 	docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg ODOO_COMMIT_ID=${ODOO_COMMIT_ID} --build-arg ODOO_SHA=${ODOO_SHA} --platform=${PLATFORM} --pull --load
