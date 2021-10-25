@@ -1,0 +1,9 @@
+env:
+  odoo_user: "odoo"
+  python_bin: "python3"
+  odoo_conf: "/opt/odoo/etc/default.conf"
+  odoo_bin: "/opt/odoo/src/odoo/odoo-bin"
+init:
+  lang: ja_JP
+  modules:
+    - website

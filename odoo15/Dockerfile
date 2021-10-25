@@ -124,6 +124,9 @@ EXPOSE 8069 8071 8072
 
 ADD boot /usr/bin/boot
 ADD save_environ /usr/bin/save_environ
+ADD startup_common /usr/bin/save_environ
+RUN chmod +x /usr/bin/save_environ /usr/bin/save_environ boot /usr/bin/boot
+
 ENTRYPOINT [ "/usr/bin/dumb-init", "/usr/bin/boot" ]
 CMD [ "help" ]
 

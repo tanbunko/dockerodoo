@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import pathlib
+import os
+import yaml
+import os
+import subprocess
+
+def load_result():
+    result = {
+        'init':{
+            'lang': False,
+            'modules': False,
+            'requirements': False,
+        }
+    }
+    result_file = "init_result.yml"
+    if os.path.isfile(result_file):
+        with open(result_file, "r") as stream:
+            result = yaml.safe_load(stream)
+            return result
+    return result
+
+def save_result(result):
+    result_file = "init_result.yml"
+    with open(result_file, "w") as stream:
+        result = yaml.safe_dump(result, stream)
+
+def run(config_file="init.yml"):
+
+    result = load_result()
+
+    with open(config_file, "r") as stream:
+        conf = yaml.safe_load(stream)
+
+
+    lang = conf['init']['lang']
+    modules = conf['init']['modules']
+
+    env = conf['env']
+    odoo_user = env['odoo_user']
+    python_bin = env['python_bin']
+    odoo_conf = env['odoo_conf']
+    odoo_bin = env['odoo_bin']
+
+    if not result['init']['requirements']:
+        requirements_file = '/opt/odoo/custom/ngc_poc/requirements.txt'
+        if os.path.isfile(requirements_file):
+            ret = subprocess.run(["pip3","install", "-r", requirements_file])
+            if ret.returncode != 0:
+                exit(-1)
+            result['init']['requirements'] = True
+            save_result(result) 
+
+    if not result['init']['modules']:
+        ret = subprocess.run(["sudo","-u", odoo_user, python_bin, odoo_bin, "-c", odoo_conf, "-i", ",".join(modules), "--stop-after-init"])
+        if ret.returncode != 0:
+            exit(-1)
+        result['init']['modules'] = True
+        save_result(result) 
+
+    if not result['init']['lang']:
+        ret = subprocess.run(["sudo","-u", odoo_user, python_bin, odoo_bin, "-c", odoo_conf, "--stop-after-init", f"--load-language={lang}"])
+        if ret.returncode != 0:
+            exit(-1)
+        result['init']['lang'] = True
+        save_result(result)
+
+
+base_path = pathlib.Path(__file__).parent.resolve()
+os.chdir(base_path)
+
+run()
