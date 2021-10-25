@@ -3,14 +3,37 @@ SHELL := /bin/bash
 # Do things in edx-platform
 .PHONY: clean help pull pull-odoo install-docker install-docker-buildx 
 
-log_success = (echo -e "\x1B[32m>> $1\x1B[39m")
-log_error = (>&2 echo -e "\x1B[31m>> $1\x1B[39m" && exit 1)
-
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIR := $(notdir $(patsubst %/,%,$(dir $(MKFILE_PATH))))
 
+ifndef ODOO_COMMIT_ID 
+ODOO_COMMIT_ID:=15.0
+endif
+
+ifndef TAG
+TAG:=odoo15
+endif
+
+ifndef PLATFORM 
+PLATFORM:=linux/amd64,linux/arm64
+endif
+
+
+BUILD_DIR:=./${TAG}/build
+ODOO_TGZ:=${BUILD_DIR}/odoo.tgz
+SHA1SUM_FILE:=${ODOO_TGZ}.sha1sum
+
+ifndef ODOO_SHA
+OLD_ODOO_SHA:=$(firstword $(shell sha1sum "${ODOO_TGZ}"))
+endif
+
+COMMA:=,
+
 # Careful with mktemp syntax: it has to work on Mac and Ubuntu, which have differences.
 PRIVATE_FILES := $(shell mktemp -u /tmp/private_files.XXXXXX)
+
+log_success = (echo -e "\x1B[32m>> $1\x1B[39m")
+log_error = (>&2 echo -e "\x1B[31m>> $1\x1B[39m" && exit 1)
 
 help: ## display this help message
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -51,26 +74,6 @@ install-docker-buildx: ## Install docker buildx for muti-platform build.
 	docker buildx inspect --bootstrap
 
 
-ifndef ODOO_COMMIT_ID 
-ODOO_COMMIT_ID:=15.0
-endif
-
-ifndef TAG
-TAG:=odoo15
-endif
-
-ifndef PLATFORM 
-PLATFORM:=linux/amd64,linux/arm64
-endif
-
-
-BUILD_DIR:=./${TAG}/build
-ODOO_TGZ:=${BUILD_DIR}/odoo.tgz
-SHA1SUM_FILE:=${ODOO_TGZ}.sha1sum
-
-ifndef ODOO_SHA
-OLD_ODOO_SHA:=$(firstword $(shell sha1sum "${ODOO_TGZ}"))
-endif
 
 pull-odoo:
 	mkdir -p ${BUILD_DIR}
@@ -81,11 +84,11 @@ pull-odoo:
 docker-build: ## These make targets currently only build LMS images.
 	if [ z"${ODOO_SHA}" != z"" ] && [ "${OLD_ODOO_SHA}" != "${ODOO_SHA}" ] ; then make pull-odoo; else if ! cat "${SHA1SUM_FILE}" | sha1sum -c --quiet -; then make pull-odoo ;fi ; fi
 	echo "TAG:${TAG} ODOO_COMMIT_ID=${ODOO_COMMIT_ID} ODOO_SHA=$(firstword ${ODOO_SHA} $(shell cat "${SHA1SUM_FILE}")) PLATFORM:${PLATFORM}"
-	docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg TAG=${TAG} --platform=${PLATFORM} --pull --push --force-rm # > ./build/job.log 2>&1 &
+	docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg TAG=${TAG} --platform=${PLATFORM} --pull --push # > ./build/job.log 2>&1 &
 
-docker-load:
-	docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg ODOO_COMMIT_ID=${ODOO_COMMIT_ID} --build-arg ODOO_SHA=${ODOO_SHA} --platform=${PLATFORM} --pull --load
-
+# docker-load: ## Load image from build cache.
+# 	# $(foreach p, $(subst ${COMMA}, ,${PLATFORM}),$(shell docker buildx build ./${TAG} -t telesoho/odoo:${TAG} --build-arg TAG=${TAG} --load))
+# 	docker buildx build -t telesoho/odoo:${TAG} --build-arg TAG=${TAG} --load
 
 docker-pull: ## update the Docker image used by "make shell"
 	docker pull telesoho/odoo:${TAG}
@@ -93,16 +96,8 @@ docker-pull: ## update the Docker image used by "make shell"
 docker-auth: ## login docker
 	echo "$$DOCKERHUB_PASSWORD" | docker login -u "$$DOCKERHUB_USERNAME" --password-stdin
 
-# docker-tag: docker-build
-# 	docker tag telesoho/odoo telesoho/odoo:${GITHUB_SHA}
-# 	docker tag telesoho/odoo:latest telesoho/odoo:${GITHUB_SHA}-newrelic
-
-
-docker-push: docker-tag docker-auth ## push to docker hub
-	docker push 'telesoho/odoo:latest'
-	docker push "openedx/odoo:${GITHUB_SHA}"
-	docker push 'openedx/odoo:latest-newrelic'
-	docker push "openedx/odoo:${GITHUB_SHA}-newrelic"
+docker-push: ## push to docker hub
+	docker push telesoho/odoo:${TAG}
 
 shell: ## launch a bash shell in a Docker container with all edx-platform dependencies installed
 	docker run -it -e "NO_PYTHON_UNINSTALL=1" -e "PIP_INDEX_URL=https://pypi.python.org/simple" -e TERM \
