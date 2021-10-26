@@ -24,7 +24,7 @@ ODOO_TGZ:=${BUILD_DIR}/odoo.tgz
 SHA1SUM_FILE:=${ODOO_TGZ}.sha1sum
 
 ifndef DOCKER_REGISTRY
-DOCKER_REGISTRY:=telesoho
+DOCKER_REGISTRY:=192.168.10.100:5000
 endif
 
 ifndef ODOO_SHA
@@ -53,6 +53,9 @@ clean: ## archive and delete most git-ignored files
 	tar xf $(PRIVATE_FILES)
 	rm $(PRIVATE_FILES)
 
+.env-export: .env
+	sed -ne '/^export / {p;d}; /.*=/ s/^/export / p' .env > .env-export
+
 install-docker: ## Install docker
 	sudo apt-get update; sudo apt-get upgrade -y
 	sudo apt-get instal docker docker-compose
@@ -77,8 +80,6 @@ install-docker-buildx: ## Install docker buildx for muti-platform build.
 	docker buildx ls
 	docker buildx inspect --bootstrap
 
-
-
 pull-odoo:
 	mkdir -p ${BUILD_DIR}
 	curl -o "${ODOO_TGZ}" -L https://github.com/odoo/odoo/tarball/${ODOO_COMMIT_ID}
@@ -88,7 +89,7 @@ pull-odoo:
 docker-build: ## These make targets currently only build LMS images.
 	if [ z"${ODOO_SHA}" != z"" ] && [ "${OLD_ODOO_SHA}" != "${ODOO_SHA}" ] ; then make pull-odoo; else if ! cat "${SHA1SUM_FILE}" | sha1sum -c --quiet -; then make pull-odoo ;fi ; fi
 	echo "TAG:${TAG} ODOO_COMMIT_ID=${ODOO_COMMIT_ID} ODOO_SHA=$(firstword ${ODOO_SHA} $(shell cat "${SHA1SUM_FILE}")) PLATFORM:${PLATFORM}"
-	docker buildx build ./${TAG} -t ${DOCKER_REGISTRY}/odoo:${TAG} --build-arg TAG=${TAG} --platform=${PLATFORM} --pull --push # > ./build/job.log 2>&1 &
+	docker buildx build ./${TAG} -t ${DOCKER_REGISTRY}/odoo:${TAG} --build-arg TAG=${TAG} --platform=${PLATFORM} --push # > ./build/job.log 2>&1 &
 
 docker-pull: ## update the Docker image used by "make shell"
 	docker pull ${DOCKER_REGISTRY}/odoo:${TAG}
@@ -97,7 +98,7 @@ docker-auth: ## login docker
 	echo "$$DOCKERHUB_PASSWORD" | docker login -u "$$DOCKERHUB_USERNAME" --password-stdin
 
 docker-push: ## push to docker hub
-	docker push ${DOCKER_REGISTRY}/odoo:${TAG}
+	docker push ${DOCKER_REGISTRY}/odoo:${TAG}	
 
 shell: ## launch a bash shell in a Docker container with all edx-platform dependencies installed
 	docker run -it -e "NO_PYTHON_UNINSTALL=1" -e "PIP_INDEX_URL=https://pypi.python.org/simple" -e TERM \
