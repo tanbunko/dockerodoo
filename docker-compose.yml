@@ -18,7 +18,7 @@ services:
         ipv4_address: 172.19.0.2
 
   default:
-    image: odoo:${TAG}
+    image: ${DOCKER_REGISTRY}:${TAG}
     command: start
     container_name: default
     restart: always
