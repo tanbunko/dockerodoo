@@ -18,7 +18,7 @@ services:
         ipv4_address: 172.19.0.2
 
   default:
-    image: ${DOCKER_REGISTRY}:${TAG}
+    image: 192.168.10.100:5000/odoo:odoo15
     command: start
     container_name: default
     restart: always
@@ -32,7 +32,7 @@ services:
       - /dockerodoo/volumes/opt/odoo/etc:/opt/odoo/etc
       - /dockerodoo/volumes/opt/odoo/custom:/opt/odoo/custom
       - /dockerodoo/volumes/opt/odoo/data/default:/opt/odoo/data
-      - ./${TAG}/default/init:/opt/scripts
+      - ./odoo15/default/init:/opt/scripts
     environment:
       - CONF_FILE=/opt/odoo/etc/default.conf
       - ODOO_DB_HOST=172.19.0.2

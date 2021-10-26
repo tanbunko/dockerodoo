@@ -31,3 +31,16 @@ sudo docker cp YOUR-CA.crt $BUILDER:/usr/local/share/ca-certificates/
 sudo docker exec $BUILDER update-ca-certificates
 sudo docker restart $BUILDER
 ```
+
+
+if the `daemon.json` file does not exist, create it. Assuming there are no other settings in the file, it should have the following contents:
+
+```
+{
+  "insecure-registries" : ["myregistry:5000"]
+}
+```
+
+Substitute the address (`myregistry:5000`) with your insecure registry.
+
+Restart docker daemon `sudo service docker restart`
