@@ -11,35 +11,91 @@ RUN echo "I am running on $BUILDPLATFORM, building for $TARGETPLATFORM" > /log
 ENV LANG C.UTF-8
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
-RUN apt-get update
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  curl \
+  dirmngr \
+  fonts-noto-cjk \
+  gnupg \
+  gsfonts \
+  libssl-dev \
+  node-less \
+  python3-num2words \
+  python3-pdfminer \
+  python3-pip \
+  python3-phonenumbers \
+  python3-pyldap \
+  python3-openssl \
+  python3-qrcode \
+  python3-renderpm \
+  python3-setuptools \
+  python3-slugify \
+  python3-vobject \
+  python3-watchdog \
+  python3-xlrd \
+  python3-xlwt \
+  xz-utils \
+  dumb-init \
+  lsb-release
 
-RUN apt-get install -y --no-install-recommends \
-        ca-certificates \
-        curl \
-        dirmngr \
-        fonts-noto-cjk \
-        gnupg \
-        gsfonts \
-        libssl-dev \
-        node-less \
-        python3-num2words \
-        python3-pdfminer \
-        python3-pip \
-        python3-phonenumbers \
-        python3-pyldap \
-        python3-openssl \
-        python3-qrcode \
-        python3-renderpm \
-        python3-setuptools \
-        python3-slugify \
-        python3-vobject \
-        python3-watchdog \
-        python3-xlrd \
-        python3-xlwt \
-        xz-utils \
-        dumb-init \
-        lsb-release
 
+RUN  apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  libffi-dev  \
+  libjpeg-dev \
+  libldap2-dev \
+  libpq-dev \
+  libsasl2-dev \
+  libxml2-dev \
+  libxslt1-dev \
+  libxslt-dev \
+  libzip-dev \
+  lsb-release \
+  python3-dev  \
+  python3-wheel \
+  python3 \
+  sudo
+
+# Install fonts
+RUN apt-get update && apt-get install -y  \
+  # JAPANESE FONTS
+  fonts-noto \
+  # fonts-ipafont \
+  # fonts-ipaexfont \
+  # fonts-vlgothic \
+  fonts-takao \
+  # fonts-hanazono \
+  # fonts-horai-umefont \
+  # fonts-komatuna \
+  # fonts-konatu \
+  # fonts-migmix \
+  # fonts-motoya-l-cedar \
+  # fonts-motoya-l-maruberi \
+  # fonts-mplus \
+  # fonts-sawarabi-gothic \
+  # fonts-sawarabi-mincho \
+  # fonts-umeplus \
+  # fonts-dejima-mincho \
+  # fonts-misaki \
+  # fonts-mona \
+  # fonts-monapo \
+  # fonts-oradano-mincho-gsrr \
+  # fonts-kiloji \
+  # fonts-mikachan \
+  # fonts-seto \
+  # fonts-yozvox-yozfont \
+  # fonts-aoyagi-kouzan-t \
+  # fonts-aoyagi-soseki \
+  # fonts-kouzan-mouhitsu \
+  # CHINESE FONTS
+  fonts-wqy-microhei \
+  ttf-wqy-zenhei \
+  python3-venv \
+  git
+
+
+RUN apt-get install -y --no-install-recommends ssh ffmpeg
 
 # Install postgresql-client
 RUN curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
@@ -48,14 +104,14 @@ RUN apt update && apt install -yq postgresql-client
 
 
 RUN dpkgArch="$(dpkg --print-architecture)"; \
-    release="$(lsb_release -cs)"; \
-    curl -o wkhtmltox.deb -L "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.${release}_${dpkgArch}.deb" \
-    && apt-get install -y --no-install-recommends ./wkhtmltox.deb \
-    && rm -rf wkhtmltox.deb
+  release="$(lsb_release -cs)"; \
+  curl -o wkhtmltox.deb -L "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.${release}_${dpkgArch}.deb" \
+  && apt-get install -y --no-install-recommends ./wkhtmltox.deb \
+  && rm -rf wkhtmltox.deb
 
 
 # Install rtlcss (on Debian buster)
-RUN apt-get install -y --no-install-recommends npm
+RUN apt-get update && apt-get install -y --no-install-recommends npm
 RUN npm config set registry "http://registry.npm.taobao.org" && npm install -g rtlcss
 
 FROM os as odoo
@@ -70,46 +126,41 @@ USER odoo
 
 RUN /bin/bash -c "mkdir -p /opt/odoo/{etc,src/odoo,custom,data,ssh}"
 
-
 # Install odoo src
-ARG ODOO_COMMIT_ID=82562cc25c10500d30056ca19d816c1d211a24eb
-ARG ODOO_SHA=12631633fbebdceb06899f4e2d1e035917310376
+ARG ODOO_COMMIT_ID=b15ed990b2187e364f0143f9f24ec1bcf5d6129a
+ARG ODOO_SHA=6e933f6770fa348348f1fffb2aedd8c1b20d6241
 # RUN curl -H "Authorization: token $github_token" 
 
-
 WORKDIR /opt/odoo/src
+RUN curl -o odoo.tgz -L https://github.com/odoo/odoo/tarball/${ODOO_COMMIT_ID} \
+    && echo "${ODOO_SHA} odoo.tgz" | sha1sum -c - \
+    && tar --transform='s|^odoo-odoo-[^\/]*|odoo|' -xzf odoo.tgz \
+    && rm odoo.tgz
 
-COPY build/odoo.tgz odoo.tgz
+USER odoo
 
-RUN tar --transform='s|^odoo-odoo-[^\/]*|odoo|' -xzf odoo.tgz 
-RUN rm -rf odoo.tgz
+WORKDIR /opt/odoo
 
-USER 0
-
-RUN apt-get install -y --no-install-recommends \
-    build-essential \
-    libffi-dev  \
-    libjpeg-dev \
-    libldap2-dev \
-    libpq-dev \
-    libsasl2-dev \
-    libxml2-dev \
-    libxslt1-dev \
-    libxslt-dev \
-    libzip-dev \
-    lsb-release \
-    python3-dev  \
-    python3-wheel \
-    python3 \
-    sudo 
-
-
-RUN pip3 install --upgrade pip
+RUN python3 -m venv venv
+RUN /opt/odoo/venv/bin/pip install --upgrade pip
 # Install Odoo python dependencies
-RUN pip3 install -r /opt/odoo/src/odoo/requirements.txt
+RUN /opt/odoo/venv/bin/pip install -r /opt/odoo/src/odoo/requirements.txt
 
+COPY requirements.txt requirements.txt
+RUN /opt/odoo/venv/bin/pip install -r /opt/odoo/requirements.txt
 # Startup script for custom setup
 # ADD startup.sh /opt/scripts/startup.sh
+
+FROM odoo as odoo_staging
+RUN /opt/odoo/venv/bin/pip install flake8 black
+USER 0
+
+RUN dpkgArch="$(dpkg --print-architecture)"; \
+  if [[ "$dpkgArch" != "amd64" ]]; then apt-get install -y --no-install-recommends chromium-browser; \
+  else curl -o google-chrome.deb -L "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" \
+  && apt-get install -f -y ./google-chrome.deb \
+  && rm -rf google-chrome.deb; fi
+
 
 VOLUME [ \
   "/opt/odoo/etc", \
@@ -117,18 +168,18 @@ VOLUME [ \
   "/opt/odoo/data", \
   "/opt/odoo/ssh", \
   "/opt/scripts" \
-]
+  ]
 
 # Expose Odoo services
 EXPOSE 8069 8071 8072
 
-ADD boot /usr/bin/boot
-ADD save_environ /usr/bin/save_environ
-ADD startup_common /usr/bin/save_environ
-RUN chmod +x /usr/bin/save_environ /usr/bin/save_environ /usr/bin/boot
+
+COPY boot /usr/bin/boot
+COPY save_environ /usr/bin/save_environ
+COPY startup_common /usr/bin/startup_common
+RUN chmod +x /usr/bin/save_environ /usr/bin/startup_common /usr/bin/boot
 
 ENTRYPOINT [ "/usr/bin/dumb-init", "/usr/bin/boot" ]
-CMD [ "help" ]
 
 # clean
 RUN rm -rf /var/lib/apt/lists/*
