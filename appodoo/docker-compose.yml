@@ -1,0 +1,70 @@
+version: '3.3'
+services:
+  postgres:
+    image: postgres
+    container_name: postgres-db
+    restart: always
+    volumes:
+      - ./build/volumes/postgresql/data:/var/lib/postgresql/data
+      - ./build/volumes/postgresql/logs:/var/log      
+      - ./build/volumes/postgresql/backups:/var/backups
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=odoo
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=strong_pg_odoo_password
+    networks:
+      postgres_subnet:
+        ipv4_address: 172.19.0.2
+
+  devodoo:
+    image: telesoho/odoo:v0.0.3
+    command: start
+    container_name: devodoo
+    restart: always
+    ports:
+      - 8069:8069
+      - 8071:8071
+      - 8072:8072
+    depends_on:
+      - postgres
+    volumes:
+      - ./build/volumes/opt/odoo/etc:/opt/odoo/etc
+      - ./apps:/opt/odoo/apps
+      - ./build/volumes/opt/odoo/data:/opt/odoo/data
+    environment:
+      - CONF_FILE=/opt/odoo/etc/devodoo.conf
+      - ODOO_DB_HOST=postgres
+      - ODOO_DB_PORT=5432
+      - ODOO_ADDONS_PATH=/opt/odoo/apps,/opt/odoo/src/odoo/addons
+      - ODOO_DB_NAME=devodoo
+      - ODOO_DB_USER=odoo
+      - ODOO_PROXY_MODE=True
+      - ODOO_ADMIN_PASSWD=strong_odoo_master_password
+      - ODOO_DB_PASSWORD=strong_pg_odoo_password
+      - ODOO_DATA_DIR=/opt/odoo/data
+      - ODOO_WITHOUT_DEMO=all
+      - ODOO_WORKERS=4
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "10"
+    networks:
+      postgres_subnet:
+        ipv4_address: 172.19.0.4
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8069/web" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  postgres_subnet:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.19.0.0/24
+
+
