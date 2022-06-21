@@ -20,6 +20,7 @@ parser.add_argument('--delete-env', help="delete environ after save",
 args = vars(parser.parse_args())
 
 def save_environ(config_file, sections):
+    print(f"{config_file}, {sections}")
     conf = configparser.ConfigParser(allow_no_value = True)
     conf.read(config_file)
 
@@ -36,6 +37,8 @@ def save_environ(config_file, sections):
                     del os.environ[env_name]
 
     with open(config_file, 'w') as configfile:
+        print(f"write config to {config_file}")
+        print(f"{conf}")
         conf.write(configfile)
 
 

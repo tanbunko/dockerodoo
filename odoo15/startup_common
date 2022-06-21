@@ -43,6 +43,9 @@ function _setup_ssh_key {
         # Bind SSH key to gitlab host
         echo "Host gitlab.com
                 PreferredAuthentications publickey
+                hostName 172.65.251.78
+           		StrictHostKeyChecking no
+          		UserKnownHostsFile /dev/null
                 IdentityFile $ssh_folder/$private_ssh_key_file" | \
             sudo -i -u "$odoo_user" tee -a "$ssh_folder/config" > /dev/null
 
@@ -65,5 +68,3 @@ fi
 #         sudo -i -u odoo git clone --single-branch --branch staging git@gitlab.com:sdl-poc/ngc_poc_phase1.git /opt/odoo/custom/ngc_poc
 #     fi
 # } 100<$lock_file
-
-

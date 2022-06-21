@@ -11,6 +11,9 @@ function help {
     echo "SDL"
 }
 
+function infine_loop {
+    while true; do sleep 12 ; done
+}
 
 function _ensure_odoo_user_owns_volume {
     # Make sure the folder exists
@@ -21,7 +24,7 @@ function _ensure_odoo_user_owns_volume {
 
         if [ "$mount_type" != 'ro' ]; then
             # Set target user as owner
-            chown "$odoo_user":"$odoo_user" -R "$1"
+            chown "$odoo_user":"$odoo_user" -fR "$1"
         else
             echo $log_src[`date +%F.%H:%M:%S`]' Read-only volume:' "$1"
         fi
@@ -32,9 +35,6 @@ function _ensure_odoo_user_owns_volumes {
     _ensure_odoo_user_owns_volume /opt/odoo/etc
     _ensure_odoo_user_owns_volume /opt/odoo/custom
     _ensure_odoo_user_owns_volume /opt/odoo/data
-    _ensure_odoo_user_owns_volume /opt/odoo/data/filestore
-    _ensure_odoo_user_owns_volume /opt/odoo/data/sessions
-    _ensure_odoo_user_owns_volume /opt/odoo/data/addons
     _ensure_odoo_user_owns_volume /opt/odoo/ssh
 }
 
@@ -86,7 +86,7 @@ function start {
       _host_user_mapping
    fi
 
-   python_bin="python3"
+   python_bin="/opt/odoo/venv/bin/python"
    if [ "$PYTHON_BIN" ]; then
       python_bin="$PYTHON_BIN"
    fi
@@ -111,7 +111,7 @@ function start {
 
    if [ -f /opt/scripts/startup.sh ]; then
       echo $log_src[`date +%F.%H:%M:%S`]' Running startup...'
-      bash /opt/scripts/startup.sh
+      source /opt/scripts/startup.sh
    fi
 
    echo $log_src[`date +%F.%H:%M:%S`]' Running odoo...'
@@ -124,4 +124,3 @@ function start {
 
 # Run command
 $*
-
