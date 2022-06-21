@@ -1,0 +1,18 @@
+# === has been move to altruismo/tools/dockerodoo/15.0/requirements.txt
+email-validator==1.1.3
+flanker>=0.9.11
+redis
+dnsq>=1.1.6
+pyOpenSSL==21.0.0
+line-bot-sdk
+git+https://github.com/telesoho/dnsq.git
+
+# === venders addons
+# apispec>=4.0.0
+# cerberus
+# jsondiff
+# marshmallow
+# marshmallow-objects>=2.0.0
+# parse-accept-language
+# pyquerystring
+# cachetools
