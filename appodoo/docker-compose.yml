@@ -18,7 +18,7 @@ services:
         ipv4_address: 172.19.0.2
 
   devodoo:
-    image: telesoho/odoo:v0.0.3
+    image: telesoho/odoo:v0.0.4
     command: start
     container_name: devodoo
     restart: always
@@ -30,13 +30,13 @@ services:
       - postgres
     volumes:
       - ./build/volumes/opt/odoo/etc:/opt/odoo/etc
-      - ./apps:/opt/odoo/apps
+      - ./apps:/opt/odoo/custom/apps
       - ./build/volumes/opt/odoo/data:/opt/odoo/data
     environment:
       - CONF_FILE=/opt/odoo/etc/devodoo.conf
       - ODOO_DB_HOST=postgres
       - ODOO_DB_PORT=5432
-      - ODOO_ADDONS_PATH=/opt/odoo/apps,/opt/odoo/src/odoo/addons
+      - ODOO_ADDONS_PATH=/opt/odoo/custom/apps,/opt/odoo/src/odoo/addons
       - ODOO_DB_NAME=devodoo
       - ODOO_DB_USER=odoo
       - ODOO_PROXY_MODE=True
