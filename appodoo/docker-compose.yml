@@ -31,12 +31,13 @@ services:
     volumes:
       - ./build/volumes/opt/odoo/etc:/opt/odoo/etc
       - ./apps:/opt/odoo/custom/apps
+      - ./odoo-e:/opt/odoo/odoo-e
       - ./build/volumes/opt/odoo/data:/opt/odoo/data
     environment:
       - CONF_FILE=/opt/odoo/etc/devodoo.conf
       - ODOO_DB_HOST=postgres
       - ODOO_DB_PORT=5432
-      - ODOO_ADDONS_PATH=/opt/odoo/custom/apps,/opt/odoo/src/odoo/addons
+      - ODOO_ADDONS_PATH=/opt/odoo/custom/apps,/opt/odoo/src/odoo/addons,/opt/odoo/odoo-e
       - ODOO_DB_NAME=devodoo
       - ODOO_DB_USER=odoo
       - ODOO_PROXY_MODE=True
