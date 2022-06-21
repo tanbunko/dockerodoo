@@ -31,7 +31,7 @@ services:
     volumes:
       - ./build/volumes/opt/odoo/etc:/opt/odoo/etc
       - ./apps:/opt/odoo/custom/apps
-      - ./odoo-e:/opt/odoo/odoo-e
+      - ./odoo-e/odoo15-e:/opt/odoo/odoo-e
       - ./build/volumes/opt/odoo/data:/opt/odoo/data
     environment:
       - CONF_FILE=/opt/odoo/etc/devodoo.conf
