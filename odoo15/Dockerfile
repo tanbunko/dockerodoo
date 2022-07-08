@@ -127,13 +127,13 @@ USER odoo
 RUN /bin/bash -c "mkdir -p /opt/odoo/{etc,src/odoo,custom,data,ssh}"
 
 # Install odoo src
-ARG ODOO_COMMIT_ID=b15ed990b2187e364f0143f9f24ec1bcf5d6129a
-ARG ODOO_SHA=6e933f6770fa348348f1fffb2aedd8c1b20d6241
+ARG ODOO_COMMIT_ID=15.0
+# ARG ODOO_SHA=6e933f6770fa348348f1fffb2aedd8c1b20d6241
 # RUN curl -H "Authorization: token $github_token" 
 
 WORKDIR /opt/odoo/src
-RUN curl -o odoo.tgz -L https://github.com/odoo/odoo/tarball/${ODOO_COMMIT_ID} \
-    && echo "${ODOO_SHA} odoo.tgz" | sha1sum -c - \
+RUN curl -o odoo.tgz -L https://github.com/tanbunko/odoo/tarball/${ODOO_COMMIT_ID} \
+    # && echo "${ODOO_SHA} odoo.tgz" | sha1sum -c - \
     && tar --transform='s|^odoo-odoo-[^\/]*|odoo|' -xzf odoo.tgz \
     && rm odoo.tgz
 
