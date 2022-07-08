@@ -134,7 +134,7 @@ ARG ODOO_COMMIT_ID=15.0
 WORKDIR /opt/odoo/src
 RUN curl -o odoo.tgz -L https://github.com/tanbunko/odoo/tarball/${ODOO_COMMIT_ID} \
     # && echo "${ODOO_SHA} odoo.tgz" | sha1sum -c - \
-    && tar --transform='s|^odoo-odoo-[^\/]*|odoo|' -xzf odoo.tgz \
+    && tar --transform='s|^tanbunko-odoo-[^\/]*|odoo|' -xzf odoo.tgz \
     && rm odoo.tgz
 
 USER odoo
